@@ -18,7 +18,7 @@ const Cliente=connection.define("cliente",{
       },    
 });
 
-Cliente.hasOne(Endereco);
+Cliente.hasOne(Endereco, {onDelete:"CASCADE"});
 Endereco.belongsTo(Cliente); 
 
 module.exports=Cliente;

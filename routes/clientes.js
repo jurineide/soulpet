@@ -4,75 +4,96 @@ const {Router}= require("express");
 const router=Router();
 
 
-router.get("/clientes",async (req,res)=>{
-    const listaClientes= await Cliente.findAll();
-    res.json(listaClientes);
-});
-//clientes por id
-router.get("/clientes/:id",async (req,res)=>{
-    const cliente=await Cliente.findOne({where:{id: req.params.id}});
-if(cliente){
-res.json(cliente);
-}else{
-res.status(404).json({message:"usuario não encontrado"});
-    }});
-//adicionar clientes
-router.post("/clientes",async(req,res)=>{
-    const{nome, email, telefone, endereco}=req.body;
+// Criar o grupo de rotas (/clientes)
 
-    try{
-        const novo = await Cliente.create(
-            {nome,email,telefone,endereco},
-            {include:[Endereco]});
-        res.status(201).json(novo);
 
-    } catch (err){        
-        res.status(500).json({message:"um erro aconteceu."});
-    }     
+// Definição de rotas
+router.get("/clientes", async (req, res) => {
+  // SELECT * FROM clientes;
+  const listaClientes = await Cliente.findAll();
+  res.json(listaClientes);
 });
-//atualizar cliente
-router.put("/clientes/:id",async(req, res)=>{
-    const{nome,email,telefone,endereco}=req.body;
-    const {id}=req.params;
-    try{
-        const cliente= await Cliente.findOne({where:{id}});
-        if(cliente){
-            if(endereco){
-              await Endereco.update(endereco,{where:{clienteId:id}});
-            }
-            await cliente.update({nome, email, telefone});
-      res.status(200).json({ message: "Cliente editado." });
-    }else{
-            res.status(404).json({message:"cliente não encontgrado"})
-        }
-    }
-    catch(err){
-        res.status(500).json({message:"um erro aconteceu"});
-    }
+
+// /clientes/1, 2
+router.get("/clientes/:id", async (req, res) => {
+  // SELECT * FROM clientes WHERE id = 1;
+  const cliente = await Cliente.findOne({
+    where: { id: req.params.id },
+    include: [Endereco], // trás junto os dados de endereço
+  });
+
+  if (cliente) {
+    res.json(cliente);
+  } else {
+    res.status(404).json({ message: "Usuário não encontrado." });
+  }
 });
-//deletar clientes
-router.delete("/cliente/:id",async (req, res) => {
-    const { id } = req.params;
+
+router.post("/clientes", async (req, res) => {
+  // Coletar os dados do req.body
+  const { nome, email, telefone, endereco } = req.body;
+
+  try {
+    // Dentro de 'novo' estará o o objeto criado
+    const novo = await Cliente.create(
+      { nome, email, telefone, endereco },
+      { include: [Endereco] }
+    );
+
+    res.status(201).json(novo);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Um erro aconteceu." });
+  }
+});
+
+// atualizar um cliente
+router.put("/clientes/:id", async (req, res) => {
+  // obter dados do corpo da requisão
+  const { nome, email, telefone, endereco } = req.body;
+  // obter identificação do cliente pelos parametros da rota
+  const { id } = req.params;
+  try {
+    // buscar cliente pelo id passado
     const cliente = await Cliente.findOne({ where: { id } });
-    try {
-        if(cliente) {
-          await cliente.destroy();
-          res.status(200).json({ message: "Cliente removido." });
-        }
-        else {
-          res.status(404).json({ message: "Cliente não encontrado." });
-        }
+    // validar a existência desse cliente no banco de dados
+    if (cliente) {
+      // validar a existência desse do endereço passdo no corpo da requisição
+      if (endereco) {
+        await Endereco.update(endereco, { where: { clienteId: id } });
       }
-      catch(err) {
-        console.error(err);
-        res.status(500).json({ message: "Um erro aconteceu." });
-      }
-    });
+      // atualizar o cliente com nome, email e telefone
+      await cliente.update({ nome, email, telefone });
+      res.status(200).json({ message: "Cliente editado." });
+    } else {
+      res.status(404).json({ message: "Cliente não encontrado." });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Um erro aconteceu." });
+  }
+});
 
+// excluir um cliente
+router.delete("/clientes/:id", async (req, res) => {
+  // obter identificação do cliente pela rota
+  const { id } = req.params;
+  // buscar cliente por id
+  const cliente = await Cliente.findOne({ where: { id } });
+  try {
+    if (cliente) {
+      await cliente.destroy();
+      res.status(200).json({ message: "Cliente removido." });
+    } else {
+      res.status(404).json({ message: "Cliente não encontrado." });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Um erro aconteceu." });
+  }
+});
 
-
-
-
+module.exports = router;
 
 
 
